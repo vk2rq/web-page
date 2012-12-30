@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE>Packet Radio Resources</TITLE>
+</HEAD>
+<BODY LANG="en-AU" DIR="LTR">
+<H1>Welcome VK2RQ's Ham Radio Page</H1>
+<H2>AX.25 Packet on Linux</H2>
+<P>Recently I have been experimenting with setting up packet radio on an
+ASUS netbook running Debian Linux. There have been a few challenges with this,
+which I describe below.</P>
+<UL>
+<LI>Installation of AX25 Lib/Tools/Apps: the problem here is that the packages
+supplied with debian are a little old, and assume that the kernel has support
+for legacy BSD-style pseudo-terminals. However, in the standard kernel
+distributed with debian linux, support for the legacy ptys has not been
+compiled in. So, I had a choice of recompiling the kernel to support the
+legacy ptys, or else compile up newer versions of the ax25libs/tools/apps
+that support the new Unix98-style ptys. I chose the latter.</LI>
+<LI>The AX.25 "call" program supplied in the ax25apps package was crashing
+when I resized the window, and didn't have support for any scrollback buffer.
+I found a <A HREF="http://marc.info/?l=linux-hams&m=126174094113550">patch</A> on the web that addresses these issues, but it was built against 
+ax25-apps-0.0.8-rc2, and wouldn't apply cleanly to the more recent version
+of call.c in CVS that supports the Unix98 PTYs. So, I updated the patch
+to make it compatible with the newer release, and you can
+<A HREF="call.patch">download the updated patch here<A>.
+</LI>
+<LI>I had an issue with getting
+<A HREF="http://www.baycom.org/~tom/ham/soundmodem/">linux soundmodem</A> to work
+at 300baud. I found the fix was to use modem tones less than 4*300=1200Hz.
+However, I wanted to cover the national APRS freqnency on 40m and the 
+frequency used by our local packet group around 1kHz higher together at
+the same time with the same radio. I found a
+<A HREF="soundmodem_300baud.patch">testing patch</A> against
+soundmodem-0.16 that removes this restriction on the modem tones.</LI>
+<LI>The aprsd packaged with debian doesn't support multiple TNCs, and you
+can only run one instance of it on the system. So, I looked to the APRX
+daemon instead. This does support multiple TNCs, but unfortunately
+kept dumping core on my system. I made a small 
+<A HREF="aprx_telemetry.patch">patch</A> to prevent this from happening.</LI>
+<LI>I found a patch to provide Internode Protocol (INP3) Support for Linux on
+<A HREF="http://sharon.pi8zaa.ampr.org/users/pe1rxq/inp3.html">this page.</A> 
+However, the patch was written against linux kernel 2.6.4, and does not apply cleanly to the latest 2.6.32 kernel.
+So, I <A HREF="2.6.32-inp3_007.patch">updated the patch<a>. However, I found that the patch causes a soft lockup
+when taking an AX25 interface out of service, due to a deadlock with the spin_locks, so some additional work is
+needed to address this. Investigations so far indicate a problem with nr_del_node_found(), which removes neighbours
+and nodes that are no longer valid. When it is called, sometimes there is already a lock on the global neighbour
+list, and sometimes there is also a lock on the global node list. When removing a neighbours or node, an attempt
+will be made to acquire a lock on the global neighbour or node list, and if such a lock is already existing, there 
+is a deadlock, and the CPU will just spin. Will need to think about the best way to clean up the code.</LI>
+</UL>
+<H2>Packet Radio Resources</H2>
+<P>I have collected here some useful links in my search to learn about packet radio.</P>
+<UL>
+<LI><A HREF="https://portal.ampr.org/index.php">AMPRNet Portal</A> to manage 44.0.0.0/8 IP allocations and ampr.org DNS resource records.</LI>
+<LI><A HREF="http://wiki.complete.org/PacketRadio">Packet Radio Overview</A> at Complete.Org</LI>
+<LI><A HREF="http://www.choisser.com/hamradio/packet.html">Larry Kenney WB9LOZ</A> packet radio information page, including his <A HREF="http://www.choisser.com/packet/">Introduction to Packet Radio</A> series of articles</LI>
+<LI><A HREF="http://vk2dot.dyndns.org">VK2DOT Packet Site</A>, including his <A HREF="http://vk2dot.dyndns.org/XR32/VK2DOT-IP-Setup.htm">Packet Setup</A> page</LI>
+<LI><A HREF="http://www.linux-ax25.org/wiki/Main_Page">Linux AX.25 Page</A></LI>
+<LI><A HREF="http://www.db0anf.de/app/bbs">DB0ANF BBS</A> page, can view packet BBS via web</LI>
+<LI><A HREF="http://www.langelaar.net/projects/jnos2/downloads/linux/">JNOS</A> developer page (and <A HREF="http://www.kf8kk.com/packet/jnos-linux/linux-jnos-setup-ftpusers-txt.htm">KF8KK's JNOS Setup Guide</A></LI>
+<LI><A HREF="http://www.soundcardpacket.org/">Soundcard Packet</A> page by Ralph Miles NM5RM</LI>
+<LI><A HREF="http://www.langelaar.net/projects/jnos2/documents/ipudp.txt">IP-in-UDP encapsulation</A> with JNOS</LI>
+<LI><A HREF="http://www.ampr-gates.net/frame_e.htm">AMPR Gates</A> covering packet radio gateways and AXIP encapsulation</LI>
+<LI><A HREF="ftp://hamradio.ucsd.edu/pub/">Hosts and DNS Zone files</A> for ampr.org domain and 44.0.0.0/8 net</LI>
+<LI><A HREF="http://www.vdazone.org/lantzdocs/packet.html">N5VDA</A> Packet page, with list of packet software</LI>
+<LI><A HREF="http://www.ampr-gates.net/frame_e.htm">AMPR Gateways</A> page</LI>
+<LI><A HREF="http://www.dxcluster.info/dxcsoft.htm">DX Cluster</A> information page</LI>
+<LI><A HREF="http://www.a00.de/tcpgroup/1988/msg00006.php">Net/Rom Manual</A> and <A HREF="http://www.ir3ip.net/iw3fqg/doc/ipax25.htm">Original NET/ROM Paper</A></LI>
+<LI>Running <A HREF="http://www.qbjnet.com/packet.html">Packet radio on Linux</A></LI>
+<LI>Linux <A HREF="http://www.tldp.org/HOWTO/AX25-HOWTO/">AX25 HOWTO</A></LI>
+<LI><A HREF="http://groups.yahoo.com/group/SV2AGW/">AGWPE</A> Yahoo Group</LI>
+<LI><A HREF="http://www.tapr.org/pdf/AX25.2.2.pdf">AX.25 Protocol</A> standard</LI>
+<LI><A HREF="http://www.timewave.com/download.html">Timewave</A> manufacturer of PK232 TNC</LI>
+<LI><A HREF="http://ftp.f6fbb.org/">FBB Main Page</A> and <A HREF="http://www.qsl.net/ok2pen/LinuXFBB.htm">FBB Setup fgor Dummies</A></LI>
+<LI><A HREF="http://mirror.switch.ch/ftp/pool/3/mirror/hamradio-ucsd/packet/misc/README.ax25ip">AX25IP README</A></LI>
+<LI><A HREF="http://rose.fpac.free.fr/">FPAC Mini-HOWTP</A></LI>
+<LI><A HREF="http://www.febo.com/packet/index.html">N8UR Packet pages</A></LI>
+<LI><A HREF="ftp://ftp.tapr.org/software_lib/Linux/ax25/">TAPR SW Library</A></LI>
+<LI>Linux <A HREF="http://www.linux-ax25.org/wiki/CVS">AX25 SW Suite</A> and <A HREF="ihttp://linkt.de/ax25spyd/">AX25SPY Page</A></LI>
+<LI>The <A HREF="digipeaters.html">Problem with Digipeaters</A> by Tom Clark W3IWI, 1986</LI>
+</UL>
+<P>Here is some information about packet activity in my local area:</P>
+<TABLE border=1>
+<TR><TH>Freq/MHz</TH><TH>Callsigns</TH><TH>Comments</TH></TR>
+<TR><TD>7.03717</TD><TD>VK2IO BBS, VK2WL, VK2SX, VK2TT, VK4ALN et al</TD>
+<TD>
+LSB w 1600/1800Hz tones: The VK2IO HF BBS is stand-alone, but VK2IO-1 node has connectivity via Internet
+</TD></TR>
+<TR><TD>145.175</TD><TD>VK2MB-1, VK2BEN-1 et al</TD>
+<TD>
+National APRS Frequency, lots of activity
+</TD></TR>
+<TR><TD>144.875</TD><TD>VK2TGB</TD>
+<TD>
+VK2TGB BBS in the Blue Mountains (part-time only)
+</TD></TR>
+<TR><TD>147.575</TD><TD>VK2IO-1, VK2AMW-7, VK2DOT-1</TD>
+<TD>
+VK2IO BBS/VK2IO-1 node is separate instance from VK2IO on HF; links to wider packet network with message forwarding (via RF only, no internet); I can connect from my QTH via VK2AMW-7 node/digipeater
+</TD></TR>
+<TR><TD>439.150(out)<BR>434.150(in)</TD><TD>VK2RAG data regenerator</TD>
+<TD>
+ Reception is too marginal from my QTH, need a better antenna :-)  Would then be able to access VK2IO, VK2DOT.
+</TD></TR>
+</TABLE>
+<P>There are some others I will check out listed on <A HREF="http://www.qsl.net/vk2kfj/pacradio.html">Steve VK2KFJ's Packet page</A>, (the info is dated, so some of these systems may not be running anymore)</P>
+</BODY>
+</HTML>

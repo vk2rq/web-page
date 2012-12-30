@@ -1,0 +1,256 @@
+
+<!-- saved from url=(0052)http://sharon.pi8zaa.ampr.org/users/pe1rxq/inp3.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>INP3 support for Linux</title>
+</head><body bgcolor="white"><h1>InterNode Protocol support for Linux</h1>
+
+
+	<p>
+	</p><h2>Why bother?</h2>
+	There are several reasons why I wrote this and why you should consider using it:
+	<ul>
+	<li><b>Avoid multiple AX.25 stacks</b><br>
+		When using XNET or TheNetNode ontop of linux you basicly have
+		two AX.25 stacks, although you need only one.
+	</li><li><b>Modular approach</b><br>
+		Most node programs try to be a solution to all problems,
+		offering a dozen different services in one monolithic
+		program.
+		With the Linux kernel stack you will have the option to run
+		each server (node, bbs, convers) seperatly.
+		This gives you more options and more reliability since one
+		service may be brought down without harming the others.
+	</li><li><b>Better route propagation</b><br>
+		This implementation tries to prevent huge amounts of data being
+		propagated. (This is explained later)
+	</li><li><b>Its Free Software</b><br>
+		This is most obvious when compared with XNET in which case you
+		have to rely completly on a single source for bugfixes or
+		changes. When using Free Software you atleast have the option
+		of doing it yourself.
+		Although TheNetNode comes with source it still has a very
+		restrictive license that is absolutly NOT compatible with
+		the definitions of an Open Source license.
+	</li></ul>
+	<p></p>
+	<p>
+	</p><h2>Status</h2>
+	The patch is currently succesfully used on several systems.
+	Keep in mind however that this is a work in progress.<br>
+	Versions 001 and 002 had some problems with propagating negative
+	routes, this should be fixed in version 003.
+	Since version 003 multiple local interfaces are supported and it
+	is possible to set their mnemonics right.
+	Version 004 has a fix for a rtt/rif race and can send out multiple
+	negative routes in one RIF. 
+	<p></p>
+	<p>
+	</p><h2>Todo</h2>
+	<ul>
+		<li>Add negative preload.
+		</li><li>test, test, test, test it again....
+	</li></ul>
+	<p></p>
+	<p>
+	</p><h2>Getting started</h2>
+	<ul>
+	<li><b><i>Download the patch: <a href="http://sharon.pi8zaa.ampr.org/users/pe1rxq/2.6.4-inp.diff">2.6.4-inp.diff</a></i></b>
+	<br>
+	</li><li>Patch your kernel
+	</li><li>Compile and install the netrom module
+	</li><li>Load the ax25 and netrom modules as you normally would
+	</li><li>Attach the netrom interface (If you use the patched version of
+	nrattach, found <a href="http://sharon.pi8zaa.ampr.org/users/pe1rxq/index.html">here</a> multiple interfaces
+	are supported and their mnemonic is automaticly set)
+	</li><li>Start netromd or add your neighbours manually
+	</li><li>Watch your Linux machine talk to its INP3 neighbours and have a party!
+	</li></ul>
+	<p></p>
+	<hr>
+	<p>
+	</p><h2>INP specification</h2>
+	The following sections will go into the specification of the protocol
+	which unfortunatly isn't as clear as it should be.
+	It can be found at: <a href="http://www.nordlink.org/html/inp3.htm">
+	http://www.nordlink.org/html/inp3.htm</a>
+	<p>
+	<b>Integration with the existing NET/ROM stack</b>
+	</p><ul>
+		<b><i>Translating time to quality</i></b><br>
+		In order to make routing decisions that make sense a node needs to
+		know how to to translate a time measurment to a quality.
+		If this is not done there is no way to compare a route via an INP
+		neighbour to a route via a normal NET/ROM node.
+		In the specification this is not addressed.
+		This will inevitably leed to different algorithms being implemented
+		which might lead to network unreliability.<br>
+		TheNetNode uses the folowing algorithm
+		<ul><br><i>
+			qual = 255 - ( rtt / 10 )
+		</i></ul><i><br></i>
+		Where qual is limited between 3 and 254 and rtt is in 10ms
+		In this case the maximum time for a node before it dissapears is about
+		25 seconds.
+		<br><br>
+		The algorithm used by XNET is not known (closed source remember...)
+		but judging by the qualities displayed it is close to the following:
+		<ul><br><i>
+			qual = 255 - ( rtt / 30 )
+		</i></ul><i><br></i>
+		Although the quality used in the netrom broadcasts differs from this...
+		This leads to a maximum time of about 75 seconds which seems to be
+		large.
+		For the Linux implementation I have choosen to use a division factor of 20.
+		This leads to a horizon at about 50 seconds.
+		<br>
+		<br>
+		<b><i>Propagation of non INP capable nodes</i></b>
+		In the specification there is no mention about the propagation of
+		non-INP nodes accross the network.
+		However watching the current implementations it seems that existing
+		nodes have their quality translated to a target time and propagated
+		as regular INP nodes from the first INP capable node on.
+		For this to be possible there needs to be some magic to translate the
+		node's quality into a target time and a hop count.
+		TheNetNode seems to be simply using the reverse of the method described
+		above.
+		For the Linux implementation I use the same method.
+	</ul>
+	
+	
+	<p>
+	<b>L3RTT FRAME</b><br>
+	</p><ul>
+		In the 'official' INP3 specification there are a few things missing in
+		the L3RTT frame format, the frametype (INFOFRAME) and for the last
+		few decades a Carriage Return has always been 0x0d and not 0x10.
+	<br>
+	<br>
+	<b><i>L3RTT frame format</i></b>
+	<table border="1">
+		<tbody><tr>
+		<td>7</td><td>7</td><td>1</td><td>4</td><td>1</td><td>n</td><td>1
+		</td></tr>
+		<tr>
+			<td>AX.25 shifted
+			</td><td>AX.25 shifted
+			</td><td>0x02
+			</td><td>0x00 0x00 0x00 0x00
+			</td><td>0x05
+			</td><td>TEXT
+			</td><td>0x0d
+		</td></tr>
+		<tr>
+			<td>Source node call
+			</td><td>L3RTT-0
+			</td><td>TTL
+			</td><td>Dummy header
+			</td><td>Frametype
+			</td><td>ASCII
+			</td><td>CR
+		</td></tr>
+	</tbody></table>
+	<br>
+	<b><i>TEXT field: (There is a space between each field)</i></b>
+	<table border="1">
+		<tbody><tr>
+			<td>6
+			</td><td>10
+			</td><td>10
+			</td><td>10
+			</td><td>10
+			</td><td>6
+			</td><td>11
+			</td><td>n
+			</td><td>n
+			</td><td>n
+		</td></tr>
+		<tr>
+			<td>L3RTT:
+			</td><td>n
+			</td><td>n
+			</td><td>n
+			</td><td>n
+			</td><td>XXXXXX
+			</td><td>LEVEL3_V2.1
+			</td><td>LINUX001
+			</td><td>$M60000
+			</td><td>$N
+		</td></tr>
+		<tr>
+			<td>Frame identifier
+			</td><td>TX time (in 10ms)
+			</td><td>Smoothed rtt
+			</td><td>Last rtt
+			</td><td>pointer to node
+			</td><td>Mnemonic
+			</td><td>version
+			</td><td>software version
+			</td><td>max time
+			</td><td>inp3 identifier
+		</td></tr>
+	</tbody></table>
+	<br>
+		According to the spec the text field should contain
+		'implementation specific information' and it should be scanned
+		for flags only (such as the $N flag for marking a node inp
+		capable).
+		However XNET does not seem to accept a neighbour that is not
+		transmitting the rtt and smoothed rtt fields in this fasion.
+		Also it will always take the netrom mnemonic specified in this
+		field no matter how often you tell it otherwise using normal
+		broadcasts.
+		In order to be compatible the Linux implementation will follow
+		this format with some changes (the time and pointer field are
+		used to store the two fields of a struct timeval).
+	<p></p>
+	</ul>
+
+
+	<p>
+	<b>Route Propagation</b><br>
+	</p><ul>
+		In the specification there is a discinction between positive
+		and negative information.
+		Positive information should only be transmitted if there is a
+		minimum percentual and a minimum absolute decrease of the target
+		time.
+		For linux these are 25% and 100ms respectivly.
+		To prevent Broadcast storms all positive propagation is delayed
+		and done only once every five minutes.<br>
+		<br>
+		However for negative information there is only one rule defined:
+		Propagate it immediatly. With the addition that there may be an
+		extra negative preload added.
+		At the moment all negative data is propagated without any preload.
+		Adaptive preload calculation is planned for later, at the moment
+		I am focussing on getting the implementation to work properly.<br>
+		<br>
+		<i>Additions to the specification:</i><br>
+		<br>
+		According to the specification routes are only transmitted on link
+		connect or on change. However if a node for some reason drops a route,
+		this might be due to a bug, it will get lost forever.
+		As another example, it is possible in Linux to remove the netrom module
+		while the ax25 module will keep the interlink intact....
+		To prevent this every few hours all routes are resend to the neighbours.
+		Since the state we try to prevent is (hopefully) rare there is no need
+		to do this often.
+		<br>
+		Furthermore provisions have been taken to ensure that also
+		cummulative changes are propagated.
+		For example:
+		If a route is propagated with a target time of 1000ms and
+		each time a rtt frame is measured it decreases with 10ms.
+		On themself these decreases do not justify the route to be
+		propagated again.
+		But when this continous over time the target time will
+		become lower than the threshold and it eventually will get
+		propagated.
+	</ul>
+	
+
+	<hr>
+	<i>Copyright (c) 2001 by Jeroen Vreeken (pe1rxq@amsat.org)</i>
+
+</body></html>

@@ -1,0 +1,226 @@
+<HTML>
+<BODY>
+<H1>The Problem With Digipeaters</H1>
+<I>Tom Clark, W3IWI<BR>
+16 December 1986</I>
+
+<PRE>
+I am sitting here in the shack feeling very frustrated. I am
+watching the activity on 145.01 (although the problem is just as
+severe on 145.05 or any of the other frequencies in use in the
+area) watching WA4xxx tying up the frequency for the greater
+portions of Northern VA, MD, WVA and EPA, trying to connect with
+a BBS in Pittsburgh using SIX! digipeaters. He is having no
+luck and undoubtedly is wondering why. The basic answer is very
+simple:
+
+PACKET RADIO DOESN'T WORK THRU MORE THAN 2 or 3 DIGIS !!!
+====== ===== ======= ==== ==== ==== ==== = == = ===== ===
+
+Oh yes, I hear you saying "You are wrong -- the AX.25 protocol
+permits me to use up to eight digis!". That is a true
+statement, but just because something is permitted doesn't mean
+it will work. And here is why --
+
+Assume that you are station ABC at one end of a long string of
+digi's trying to send out a packet thru digis DEF, GHI, JKL,
+MNO, PQR, STU and addressed to station XYZ (fake calls are used
+to protect the guilty!). Thus your intended path is expressed
+by the following connect command
+
+CONNECT XYZ VIA DEF,GHI,JKL,MNO,PQR,STU
+
+Your outgoing packet then should take the path
+
+ABC => DEF => GHI => JKL => MNO => PQR => STU => XYZ
+
+At every step along the way, there is a finite chance that the
+packet is going to be hit by QRM. My observations are that on
+the very best paths about 5% of packets get clobbered on any
+single hop. For the example we are using, this means that 95%
+of the ABC => DEF packets make it to DEF, and then 95% of them
+successfully navigate the DEF => GHI path, and so forth. Thus
+at the destination XYZ we have
+
+.95 * .95 * .95 * .95 * .95 * .95 * .95 = .70
+
+Only 70% of the data you sent out makes it all the way to XYZ.
+
+BUT WAIT -- THERE'S MORE !!!!
+
+AX.25 packet protocols require XYZ to send you back an 'ack'
+acknowledgement packet which then has to unwind itself back thru
+the same route. The same probability arguments apply, and 70%
+
+Fidonet HAM/PACKET Digest Page 31
+Volume 1, Number 6 December 3, 1989
+
+of the acks get to you. Thus on a high- quality 95% link thru 6
+digis, only .7 * .7 = .49 of your packets are successful thru 6
+digipeaters! A Las Vegas gambler could make a very good living
+on 51/49 guaranteed odds.
+
+BUT WAIT -- THERE'S MORE !!!!
+
+We took 95% as the probability of each link working. I know of
+very few paths that are that good except perhaps at 4AM when
+nobody else is on the frequency. Links you tend to think of as
+'pretty good' probably have 10-20% of your packets trashed on
+any given hop. And I know of a number of links where the
+probabilities are no better than 50%. For the general case, if
+P is the link probability on all links, and N digipeaters are
+involved, then PA = the aggregate probability of success will be
+given by the formula
+
+PA = ( P ) ** ( 2N+2 )
+
+BUT WAIT -- THERE'S MORE !!!!
+
+Every time your packet gets clobbered, you try again to push it
+thru. If 50% of you packets get hit, on average you will
+try/retry your packet 2 times. In general the number of
+tries/retries that will be required is
+
+TRIES = 1 / PA
+
+BUT WAIT -- THERE'S MORE !!!!
+
+You and everybody else who is on packet spent a lot of money to
+be able to ragchew and send messages (or data, or nudie
+pictures, or ???) at 1200 baud. But the packet gurus lied to
+you. Your data doesn't really flow at 1200 baud -- there is
+some overhead associated with headers that are appended to each
+and every packet you send, plus some time wasted in getting that
+all important ack back, plus some time for your radio to change
+from transmit to receive and back to transmit, plus time waiting
+for a hole to open up on the channexDl. At best you can
+transmit say 600 baud. But for every digipeater you use,
+another set of similar delays is added at each step along the
+way. So if you had a perfect set of links thru N digis, your
+average baud rate would drop to something like
+
+DIGIPEATED BAUD RATE = 600 / ( 1 + N )
+
+BUT WAIT -- THERE'S MORE !!!!
+
+Each time your packet gets clobbered, it is retried, until it
+gets thru (or until you time out). So the real effective baud
+rate is slowed even further until it is given by this formula
+
+EFFECTIVE BAUD RATE = 600 * PA / ( 1 + N )
+
+
+= 600 * [(P)**(2N+2)] / ( 1 + N )
+
+BUT WAIT -- THERE'S MORE !!!!
+
+Every time you take over the channel with an unsuccessful
+packet, somewhere along the chain you have prevented some other
+hapless individual from using that time slot. YOU HAVE HOGGED
+THE FREQUENCY!
+
+We might express your channel usage efficiency as the ratio of
+the baud rate that you actually to the baud rate you would have
+achieved if you had simply used a piece of wire, i.e.
+
+EFFICIENCY = EFFECTIVE BAUD RATE / 1200
+
+More instructive than seeing this factor as a simple numerical
+ratio is to express it in dB as what I like to call the 'Hog
+Factor' --
+
+HOG FACTOR = 10 log ( EFFECTIVE BAUD RATE / 1200 )
+
+This factor even includes the 3 dB 'loss' for a perfect AX.25
+link due to the overhead we discussed earlier.
+
+BUT WAIT -- THERE'S MORE !!!!
+
+So far I have only used a few numbers to introduce the concepts.
+The following four tables tell the whole story. I have worked
+out a number of cases for links ranging from perfect (P=1.0) to
+pretty scuzz-ball (P=0.50) and for 0 thru 8 digipeaters. My
+experience shows that P=0.95 is a pretty rare case, but outside
+of 'prime-time' hours P=0.90 is fairly typical. In the evenings
+when everybody is on the channel P=0.80 is not unusual. Paths
+involving 'DX' digipeaters (like K3LZ-1 or WB4APR-6 or WA4FRB-3)
+degrade to P=0.6 or P=0.7 in the evenings simply because they
+hear so much stuff. And we always have the user in a poor
+location, running an HT with a rubber duckie who is lucky to
+have P=0.5!
+
+My advice to all users is that they not even attempt to use a
+path for which PA < 0.5 (or on average < 2 retries). I have put
+those 'bad' combinations in parenthesis to highlight them.
+Unless you have an exceptional path (better than P=0.95), these
+tables clearly show that using more than one or two digipeaters
+is an exercise in futility which will make you very unpopular
+with your peers ('Hog Factor' poorer than -10 dB) and drive you
+to distraction (with effective baud rates slower than about 100
+baud). Have I proven my premise from the start of this tome?
+
+PACKET RADIO DOESN'T WORK THRU MORE THAN 2 or 3 DIGIS !!!
+
+<------ Link Success Probabilities Per Hop ---------->
+
+Fidonet HAM/PACKET Digest Page 33
+Volume 1, Number 6 December 3, 1989
+
+N = P=1.0 P=.95 P=.90 P=.85 P=.80 P=.70 P=.60 P=.50
+No. of ==== ==== ==== ==== ==== ==== ==== ====
+Digis
+---- ----- PA = Aggregate Probability of Success --------
+0 1.0 0.90 0.81 0.72 0.64 (0.49) (0.36) (0.25)
+1 1.0 0.81 0.66 0.52 (0.41) (0.24) (0.13) (0.06)
+2 1.0 0.74 0.53 (0.38) (0.26) (0.12) (0.05) (0.02)
+3 1.0 0.66 (0.43) (0.27) (0.17) (0.06) (0.02) (0.00)
+4 1.0 0.60 (0.35) (0.20) (0.11) (0.03) (0.01) (0.00)
+5 1.0 0.54 (0.28) (0.14) (0.07) (0.01) (0.00) (0.00)
+6 1.0 (0.49) (0.23) (0.10) (0.04) (0.01) (0.00) (0.00)
+7 1.0 (0.44) (0.19) (0.07) (0.03) (.00) (0.00) (0.00)
+8 1.0 (0.40) (0.15) (0.05) (0.02) (.00) (0.00) (0.00)
+
+---- Average number of Tries/Retries before Success ----
+0 1.0 1.1 1.2 1.4 1.6 (2.0) (2.8) (4)
+1 1.0 1.2 1.5 1.9 (2.4) (4.2) (7.7) (16)
+2 1.0 1.4 1.9 (2.7) (3.8) (8.5) (21) (64)
+3 1.0 1.5 (2.3) (3.7) (6.0) (17) (60) (256)
+4 1.0 1.7 (2.9) (5.1) (9.3) (35) (165)
+(1,024)
+5 1.0 1.9 (3.5) (7.0) (15) (72) (459)
+(4,096)
+6 1.0 (2.1) (4.4) (9.7) (23) (147) (1,276)
+(16,384)
+7 1.0 (2.3) (5.4) (13) (36) (301) (3,545)
+(65,536)
+8 1.0 (2.5) (6.7) (19) (56) (614) (9,846)
+(262,144)
+
+-- ------- Equivalent System Baud Rate ----------------
+0 600 542 486 434 384 294 216 150
+1 300 244 197 157 123 72 39 19
+2 200 147 106 75 52 24 9 3
+3 150 100 65 41 25 9 3 1
+4 120 72 42 24 13 3 1 0.1
+5 100 54 28 14 7 1 0.2 0.02
+6 86 42 20 9 4 1 0.1 0.01
+7 75 33 14 6 2 0.2 0.02 0.001
+8 67 26 10 4 1 0.1 0.007 0.0003
+
+-- -------- Channel 'Hog factor' in dB -----------------
+0 -3 -3 -4 -4 -5 -6 -7 -9
+1 -6 -7 -8 -9 -10 -12 -15 -18
+2 -8 -9 -11 -12 -14 -17 -21 -26
+3 -9 -11 -13 -15 -17 -21 -27 -33
+4 -10 -12 -15 -17 -20 -25 -32 -40
+5 -11 -13 -16 -19 -22 -29 -37 -47
+6 -11 -15 -18 -21 -25 -33 -43 -54
+7 -12 -16 -19 -23 -28 -37 -48 -60
+8 -13 -17 -21 -25 -30 -40 -52 -67
+ -40 -52 -67
+
+---
+EOF
+</PRE>
+</BODY>
+</HTML>
